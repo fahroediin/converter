@@ -6,7 +6,7 @@ import io
 class CsvToExcelTool:
     def __init__(self, root):
         self.root = root
-        self.root.title("CSV to Excel Converter")
+        self.root.title("CSV to Excel Converter (No Gap)")
         self.root.geometry("800x600")
 
         # --- Frame Input ---
@@ -50,6 +50,7 @@ class CsvToExcelTool:
         btn_copy.pack(fill=tk.X, padx=10, pady=10)
 
     def convert_data(self):
+        # Ambil data dan bersihkan spasi di awal/akhir string utama
         raw_data = self.txt_input.get("1.0", tk.END).strip()
         delimiter = self.entry_delim.get()
 
@@ -62,17 +63,19 @@ class CsvToExcelTool:
             return
 
         try:
-            # Menggunakan library CSV untuk parsing yang akurat
             f_input = io.StringIO(raw_data)
             reader = csv.reader(f_input, delimiter=delimiter)
             
             f_output = io.StringIO()
-            writer = csv.writer(f_output, delimiter='\t') # Output selalu Tab separated untuk Excel
+            
+            # PERBAIKAN DI SINI: lineterminator='\n' mencegah baris ganda
+            writer = csv.writer(f_output, delimiter='\t', lineterminator='\n') 
 
             row_count = 0
             for row in reader:
-                if row: # Hindari baris kosong
-                    # Membersihkan spasi berlebih di setiap sel jika perlu
+                # Cek jika row tidak kosong (list kosong)
+                if row and any(field.strip() for field in row):
+                    # Membersihkan spasi berlebih di setiap sel
                     clean_row = [cell.strip() for cell in row]
                     writer.writerow(clean_row)
                     row_count += 1
@@ -82,7 +85,6 @@ class CsvToExcelTool:
             self.txt_output.delete("1.0", tk.END)
             self.txt_output.insert("1.0", result)
             
-            # Feedback status
             messagebox.showinfo("Sukses", f"Berhasil mengonversi {row_count} baris data.")
 
         except Exception as e:
@@ -92,7 +94,7 @@ class CsvToExcelTool:
         result = self.txt_output.get("1.0", tk.END)
         self.root.clipboard_clear()
         self.root.clipboard_append(result)
-        self.root.update() # Menjaga clipboard tetap tersimpan
+        self.root.update() 
         messagebox.showinfo("Copied", "Data berhasil disalin! Silakan Paste (Ctrl+V) di Excel.")
 
     def clear_all(self):
